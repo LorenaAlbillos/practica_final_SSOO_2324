@@ -28,7 +28,7 @@ int numClientes;
 struct cliente{
     int ID;
     int atendido;
-}
+};
 
 struct cliente *clientes;
 
