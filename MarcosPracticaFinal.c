@@ -13,8 +13,10 @@ void writeLogMessage (char *id, char *msg);
 int calcularAleatorio(int min, int max);
 void *Caja (void *arg);
 void *Reponedor(void *arg);
-void *Cliente(void *arg);
+void *accionCliente(void *arg);
 void creaCliente(int signal);
+int getPosicion(int *id);
+void eliminar ( int id);
 
 // Declaración de variables globales
 pthread_mutex_t mutex_listaClientes;
@@ -30,7 +32,7 @@ struct cliente{
     int atendido;
 };
 
-struct cliente *clientes;
+struct cliente *clientes; // Esto es un puntero de tipo struct cliente
 
 int main(int argc, char *argv[]){
     int numCajeros;
@@ -93,11 +95,30 @@ void *Caja (void *arg){
 void *Reponedor(void *arg){
 
 }
-void *Cliente(void *arg){
-    printf("Nuevo cliente");
+void *accionCliente(void *arg){ // LLeva el * por que recibe los hilos recien creados
+    // Primero convertimos a nuestro tipo ID
+    int ID = (int*)&arg;    // Casteo para convertir a ID
+    while(1){
+        // Obtengo la posicion de la solicitud en la lista 
+        // Compruebo si estoy atendido
+    }
 }
+/**
+ * Metodo que crea nuevos clientes si hay sitio en la cola
+ * @param signal
+*/
 void creaCliente(int signal){
-    printf("Nuevo Cliente");
+    // Compruebo si hay sitio en la cola
+    for (int i = 0; i < numClientes; i++){
+        if (clientes[i].ID==0){
+            clientes[i].ID = numsolicitudes;
+            numsolicitudes++;
+
+            pthread_t cliente;
+            pthread_create(&cliente, NULL, accionCliente, (void*)clientes[numsolicitudes-1]);
+        }
+        return;
+    }
 }
 /**
  * Metodo que escribe los mensajes del log
@@ -124,4 +145,29 @@ void writeLogMessage (char *id, char *msg){
 */
 int calcularAleatorio(int min, int max){
     return rand()%(max-min+1)+min;
+}
+/**
+ * Metodo que devuelve la posicion de un cliente en la cola.
+ * @param id del cliente.
+*/
+int getPosicion(int *id){
+    for(int i = 0; i < numClientes; i++){
+        if(clientes[i].ID==id){ // Si coincide lo encontramos
+        return i;   // Devolvemos la pos
+        }
+    }
+    return -1;
+}
+/**
+ * Metodo que elimina un cliente de la cola.
+ * @param id del cliente.
+*/
+void eliminar ( int id){
+    int posicion = getPosicion(id);
+    for (int i = posicion; i < numClientes-1; i++){
+        clientes[i].ID=clientes[i+1].ID;
+        clientes[i].atendido=clientes[i+1].atendido;
+    }
+    clientes[numClientes-1].ID=0;
+    clientes[numClientes-1].atendido=0;
 }
