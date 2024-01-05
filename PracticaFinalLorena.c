@@ -76,7 +76,7 @@ int main(int argc, char *argv[]){
     struct sigaction cliente_signal = {0};
 
     /*Definir la manejadora de la senal*/
-    cliente_signal.sa_handler = crearCliente;
+    cliente_signal.sa_handler = handlerCliente;
 
     /*Armamos la senal*/
     sigaction(SIGUSR1, &cliente_signal, NULL);
@@ -92,16 +92,20 @@ int main(int argc, char *argv[]){
 }
 
 /*Metodos hilos*/
-void *caja(void *arg){
+void *handlerCaja(void *arg){
 
 }
 
-void *reponedor(void *arg){
+void *handlerReponedor(void *arg){
 
 }
 
-void *cliente(void *arg){
-    
+void *handlerCliente(void *arg){
+
+}
+
+void crearCliente(int signal){
+    printf("Nuevo cliente");
 }
 
 /*Metodo para calcular aleatorios*/
