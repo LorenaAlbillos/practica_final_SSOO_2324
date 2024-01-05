@@ -21,8 +21,13 @@ pthread_mutex_t mutexReponedor;
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexListaClientes;
 
-void writeLogMessage(int id, char*msg);
+void writeLogMessage(int *id, char*msg);
 int calculaAleatorios();
+int getPosicionLista(int ID);
+void *handlerCajero(void *arg);
+void *handlerReponedor(void *arg);
+void *metodoCliente(void *arg);
+
 
 struct cliente{
     int ID;
@@ -95,14 +100,33 @@ void *handlerCajero(void *arg) {
 }
 
 void *metodoCliente(void *arg) {
+    //Convertirlo a nuestro tipo ID (int)
+    int id = (int*)&arg;
+    //Ponemos un mensaje de nuevo cliente creado
+    printf("Cliente ID:  | He sido creado."); //meterle id cliente
+    while(1) {
+        //Obtenemos la posicion de mi solicitud en la lista y comprobar si estoy siendo atendido(atendido == 1)
 
+    }
 }
 
 void creaCliente(int signal) {
-    printf("Nuevo cliente");
+    //Comprobar si hay sitio en la fila
+    for(int i = 0; i < maxClientesCola; i++) {
+        if(clientes[i].ID == 0) {
+            clientes[i].ID = numSolicitudes; //Le ponemos el siguiente al ultimo id asignado, secuencial.
+            numSolicitudes++;
+            printf("Nuevo cliente");
+            return;
+        }else {
+            printf("No hay espacio.");
+        }
+    }
 }
 
-void writeLogMessage(int id, char*msg) {
+void writeLogMessage(int *id, char*msg) {
+    //Bloquear mutex
+    pthread_mutex_lock(&mutexLog);
     //Calculamos la hora actual
     time_t now = time(0);
     struct tm *tlocal = localtime(&now);
@@ -113,8 +137,34 @@ void writeLogMessage(int id, char*msg) {
     archivo = fopen(logFileName, "a");
     fprintf(archivo, "[%s] %s: %s\n", stnow, id, msg);
     fclose(archivo);
+    //Liberar 
+    pthread_mutex_unlock(&mutexLog);
 }
 
 int calculaAleatorios(int min, int max) {
     return rand()%(max-min+1) + min;
 }
+
+int getPosicionLista(int ID) {
+    for(int i = 0; i < maxClientesCola; i++) {
+        if(clientes[i].ID == ID) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void eliminar(int ID) {
+    int posicion = getPosicionLista(ID);
+    for(int i = posicion; i < maxClientesCola-1; i++) {
+        clientes[i].ID = clientes[i+1].ID;
+        clientes[i].atendido = clientes[i+1].atendido;
+    }
+    clientes[maxClientesCola-1].ID = 0;
+    clientes[maxClientesCola-1].atendido = 0;
+}
+//Bloquear mutex
+//pthread_mutex_lock(&mutexListaClientes);
+//Liberar 
+//pthread_mutex_unlock(&mutexListaClientes);
+//PENDIENTE: BLOQUEAR EL MUTEX PARA CUANDO SE ACCEDA A LA LISTA DE CLIENTES, Y LO DEL ID EN EL PRINTF
