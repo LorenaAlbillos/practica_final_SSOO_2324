@@ -32,25 +32,6 @@ struct cliente{
 
 struct cliente *clientes;
 
-
-void writeLogMessage (char *id, char *msg){
-    // Calculamos la hora actual
-    time_t now = time(0);
-    struct tm *tlocal = localtime(&now);
-    char stnow[25];
-    strftime(stnow, 25, "%d/%m/%y %H:%M:%S", tlocal);
-
-    // Escribimos en el log
-    archivo = fopen("logs.txt", "a");
-    fprintf(archivo, "[%s] %s: %s\n", stnow, id, msg);
-    fclose(archivo);
-
-}
-
-int calcularAleatorio(int min, int max){
-    return rand()%(max-min+1)+min;
-}
-
 int main(int argc, char *argv[]){
     int numCajeros;
     
@@ -64,15 +45,15 @@ int main(int argc, char *argv[]){
         perror("Error.");
         exit(-1);
     }
-    // Comprobar que el numClientes y numcajeros es >0 para continuar
+    // Compruebo que haya Cajeros y Clientes
     if(numCajeros<=0 || numClientes<=0){ 
         perror("Error.");
         exit(-1);
     }
-    // Inicializamos la cola de clientes
+    // Inicializo la cola de clientes
     clientes  = (struct cliente*) malloc (numClientes*sizeof(struct cliente)); 
 
-    // Inicializar hilos
+    // Inicializo los hilos
     pthread_t reponedor;
     pthread_create (&reponedor, NULL, Reponedor, NULL);   
 
@@ -86,34 +67,29 @@ int main(int argc, char *argv[]){
         pthread_t cajero;
         pthread_create(&cajero, NULL, Caja, NULL);
     }
-    // Inicializamos los 3 mutex
+    // Inicializo los 3 mutex.
     pthread_mutex_init(&mutex_log, NULL);
     pthread_mutex_init(&mutex_listaClientes, NULL);
     pthread_mutex_init(&mutex_reponedor, NULL);
 
-    //Armamos las señales
+    //Armamo la señal y defino su manejador
     struct sigaction cliente_signal = {0};
-
-    // Definimos el manejador de la señal
     cliente_signal.sa_handler = creaCliente;
 
-    // Armamos la señal
+    // Armamo la señal
     sigaction(SIGUSR1, &cliente_signal, NULL);
 
-    //Esperamos señal
+    //Espero a la señal
     while(1){
-    pause();
-
+        pause();
     }
     printf("Fin");
     return 0;
-    
 }
 
 void *Caja (void *arg){
 
 }
-
 void *Reponedor(void *arg){
 
 }
@@ -122,4 +98,30 @@ void *Cliente(void *arg){
 }
 void creaCliente(int signal){
     printf("Nuevo Cliente");
+}
+/**
+ * Metodo que escribe los mensajes del log
+ * @param id  id
+ * @param msg mensaje 
+*/
+void writeLogMessage (char *id, char *msg){
+    // Calculo la hora actual
+    time_t now = time(0);
+    struct tm *tlocal = localtime(&now);
+    char stnow[25];
+    strftime(stnow, 25, "%d/%m/%y %H:%M:%S", tlocal);
+
+    // Escribo en el log
+    archivo = fopen("logs.txt", "a");
+    fprintf(archivo, "[%s] %s: %s\n", stnow, id, msg);
+    fclose(archivo);
+
+}
+/**
+ * Metodo que calcula un número aleatorio entre dos numeros
+ * @param min numero minimo
+ * @param max numero maximo
+*/
+int calcularAleatorio(int min, int max){
+    return rand()%(max-min+1)+min;
 }
