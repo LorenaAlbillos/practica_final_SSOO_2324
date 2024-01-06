@@ -17,6 +17,7 @@ void *accionCliente(void *arg);
 void creaCliente(int signal);
 int getPosicion(int *id);
 void eliminar ( int id);
+char intoChar(int id);
 
 // Declaración de variables globales
 pthread_mutex_t mutex_listaClientes;
@@ -98,11 +99,60 @@ void *Reponedor(void *arg){
 void *accionCliente(void *arg){ // LLeva el * por que recibe los hilos recien creados
     // Primero convertimos a nuestro tipo ID
     int ID = (int*)&arg;    // Casteo para convertir a ID
+    
     while(1){
-        // Obtengo la posicion de la solicitud en la lista 
-        // Compruebo si estoy atendido
+        // Bloqueo el mutex
+        pthread_mutex_lock(&mutex_listaClientes);
+        int posicion = getPosicion(id);
+        if (clientes[posicion].atendido==1){
+            //Ya no estan atendiendo
+            pthread_mutex_unlock(&mutex_listaClientes);
+            // salgo
+            break;
+        }
+        pthread_mutex_unlock(&mutex_listaClientes);
+        writeLogMessage(intoChar(id), "No me estan atendiendo");
+        // Duermo 10 secs 
+        sleep(10);
+        // Compruebo si me voy de la cola(10%)
+        if(irse<10){
+            //Bloquea mutex clientes
+            pthread_mutex_lock(&mutex_clientes);
+            //Eliminamos clientes
+            eliminarCliente(id);
+            //Desbloqueo  M¡mutex
+            pthread_mutex_unlock(&mutex_clientes);
+            //Escribo mensaje
+            //Nos morimos
+            pthread_exit(NULL);
+        }
     }
+
+    // Mensaje me estoy atendiendo.
+    while(2){   // Espero mientras me atienden
+        // Bloqueo el mutex.
+        pthread_mutex_lock(&mutex_clientes);
+        int posicion = getPosicion(id);
+        // Si me han atendido -> salgo.
+        if (clientes[posicion].atendido==0){
+            eliminarCliente(id);
+            pthread_mutex_unlock(&mutex_listaClientes);
+            break;
+        }
+        pthread_mutex_unlock(&mutex_listaClientes);
+
+        // Si no espero.
+    }
+    //Mensaje de ha termindao mi atención.
+    printf("Ha terminado mi asistencia y me voy");
 }
+
+char* getID(int id){
+    char* identificador = (char)malloc(15*sizeof(char));
+    sprintf(identificador, "Cliente_%d", id, tipo, id);
+    return identificador;
+}
+
 /**
  * Metodo que crea nuevos clientes si hay sitio en la cola
  * @param signal
@@ -170,4 +220,12 @@ void eliminar ( int id){
     }
     clientes[numClientes-1].ID=0;
     clientes[numClientes-1].atendido=0;
+}
+/**
+ * Metodo que pasa un dato de tipo int a uno de tipo char
+ * @param id 
+ * @return char 
+*/
+char intoChar(int id){
+    return (char)id;
 }
