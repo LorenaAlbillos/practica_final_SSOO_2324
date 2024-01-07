@@ -27,6 +27,7 @@ int getPosicionLista(int ID);
 void *handlerCajero(void *arg);
 void *handlerReponedor(void *arg);
 void *metodoCliente(void *arg);
+char* generaID(int ID, char* tipo);
 
 
 struct cliente{
@@ -85,7 +86,7 @@ int main(int argc, char* argv[]) {
     while(1) {
         pause();
     }
-    pritnf("Fin");
+    printf("Fin");
     return 0;
 } //Fin del main
 
@@ -101,27 +102,77 @@ void *handlerCajero(void *arg) {
 
 void *metodoCliente(void *arg) {
     //Convertirlo a nuestro tipo ID (int)
-    int id = (int*)&arg;
+    int id = *(int*)arg;
     //Ponemos un mensaje de nuevo cliente creado
-    printf("Cliente ID:  | He sido creado."); //meterle id cliente
+    printf("Cliente ID: %d | He sido creado.", id);
     while(1) {
         //Obtenemos la posicion de mi solicitud en la lista y comprobar si estoy siendo atendido(atendido == 1)
-
+        pthread_mutex_lock(&mutexListaClientes);
+        int posicion = getPosicionLista(id);
+        if(clientes[posicion].atendido == 1) { //Esto significa que nos están atendiendo
+            pthread_mutex_unlock(&mutexListaClientes);
+            //Ponemos un mensaje en el log de que nos están atendiendo
+            writeLogMessage(generaID(id,"Cliente"), "Me están atendiendo.");
+            //Salimos del bucle
+            break;
+        }
+        else {
+            //Liberamos el mutex
+            pthread_mutex_unlock(&mutexListaClientes);
+            //Dormimos 10 segundos
+            sleep(10);
+            //Comprobamos si nos tenemos que ir (10%)
+            int num = calculaAleatorios(10,100);
+                if(num <= 10) {
+                    //El cliente abandona el establecimiento
+                    pthread_mutex_lock(&mutexListaClientes);
+                    eliminar(id);
+                    pthread_mutex_unlock(&mutexListaClientes);
+                    //Escribimos en el log que el cliente se ha cansado de esperar y abandona el establecimiento
+                    writeLogMessage(generaID(id, "Cliente"), "Me he cansado de esperar y abandono el establecimiento.");
+                    pthread_exit(NULL);
+                }
+        }
     }
+    //Significa que nos están atendiendo
+    while(1) {
+        //Bloqueamos el mutex
+        pthread_mutex_lock(&mutexListaClientes);
+        int pos = getPosicionLista(id);
+        if(clientes[pos].atendido == 2) {         //Compruebo si ya me han atendido
+            //Desbloqueamos el mutex
+            pthread_mutex_unlock(&mutexListaClientes);
+            //Si me han atendido me salgo
+            break;    
+        }else {
+            pthread_mutex_unlock(&mutexListaClientes);
+        }
+    }
+    //Pongo un mensaje de que me han atendido
+    writeLogMessage(generaID(id, "Cliente"), " Ya he sido atendido.");
+    //Me borro de la lista,el cliente abandona el establecimiento
+    pthread_mutex_lock(&mutexListaClientes);
+    eliminar(id);
+    pthread_mutex_unlock(&mutexListaClientes);
+    pthread_exit(NULL);
 }
 
 void creaCliente(int signal) {
     //Comprobar si hay sitio en la fila
+    pthread_mutex_lock(&mutexListaClientes);
     for(int i = 0; i < maxClientesCola; i++) {
         if(clientes[i].ID == 0) {
             clientes[i].ID = numSolicitudes; //Le ponemos el siguiente al ultimo id asignado, secuencial.
             numSolicitudes++;
             printf("Nuevo cliente");
+            pthread_t cliente;
+            pthread_create(&cliente,NULL,metodoCliente,(void*)clientes[i].ID);
+            pthread_mutex_unlock(&mutexListaClientes);
             return;
-        }else {
-            printf("No hay espacio.");
         }
     }
+    pthread_mutex_unlock(&mutexListaClientes);
+    printf("No hay espacio.");
 }
 
 void writeLogMessage(int *id, char*msg) {
@@ -163,8 +214,9 @@ void eliminar(int ID) {
     clientes[maxClientesCola-1].ID = 0;
     clientes[maxClientesCola-1].atendido = 0;
 }
-//Bloquear mutex
-//pthread_mutex_lock(&mutexListaClientes);
-//Liberar 
-//pthread_mutex_unlock(&mutexListaClientes);
-//PENDIENTE: BLOQUEAR EL MUTEX PARA CUANDO SE ACCEDA A LA LISTA DE CLIENTES, Y LO DEL ID EN EL PRINTF
+
+char* generaID(int ID, char* tipo) {
+    char* ident = (char)malloc(20*sizeof(char));
+    sprintf(ident,"%s_%d" ,tipo,ID);
+    return ident;
+}
