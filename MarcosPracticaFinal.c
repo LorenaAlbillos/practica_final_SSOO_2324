@@ -91,7 +91,73 @@ int main(int argc, char *argv[]){
 }
 
 void *Caja (void *arg){
+    // Obtenemos el id
+    int id  =*(int*) arg;
+    int atendidos = 0;
+    while (1){
+        // Bloqueamos mutex clientes
+        pthread_mutex_lock(&mutex_listaClientes);
+        // Selecciono de la lista
+        int idCliente = getNuevoCliente();
+        // Desbloqueo mutex clientes
+        pthread_mutex_unlock(&mutex_listaClientes);
 
+        if(idCliente!=-1){
+            int atencion = calcularAleatorio(1, 5);
+        
+            // Escribimos ue empezamos la atencion de un cliente
+            char *mensaje = (char *)malloc (50* sizeOf(char));
+            sprintf(mensaje, "El %s cliente comienza a ser atendido", intoChar(id));
+            writeLogMessage(intoChar(id), "El %s cliente comienza a ser atendido");
+            //Dormimos
+            sleep(atencion);
+            //Comprobamos las posibilidades
+            int posibilidades= calcularAleatorio(1, 100);
+            if(posibilidades<=70){
+                sprintf(mensaje, "El %s cliente tiene todo correcto", intoChar(id));
+                writeLogMessage(intoChar(id), "El %s cliente tiene todo correcto");
+                // Calculo precio compra
+                int precio = calcularAleatorio(1, 100);
+            }else if(posibilidades<=95){
+                sprintf(mensaje, "El %s cliente tiene que esperar", intoChar(id));
+                writeLogMessage(intoChar(id), "El %s cliente tiene que esperar");
+                // Calculo precio compra
+                int precio = calcularAleatorio(1, 100);
+            }else{
+                sprintf(mensaje, "El %s cliente no puede realizar la compra", intoChar(id));
+                writeLogMessage(intoChar(id), "El %s cliente no puede realizar la compra");
+            }
+            //Cambio estado
+            pthread_mutex_lock(&mutex_listaClientes);
+            setAtendido(idCliente);
+            pthread_mutex_unlock(&mutex_listaClientes);
+            atendidos++;
+            if(atendidos%10==0){
+                sprintf(mensaje, "me voy a descansar", intoChar(id));
+                writeLogMessage(intoChar(id), "Me voy a descansar");
+
+                sleep(20);
+            }
+        }
+    }
+}
+char * getNuevoCliente(){
+    for (int i=0; i<numClientes; i++){
+        if ( clientes[i].atendido==0 && clientes[i].ID!=0){
+            clientes[i].atendido=1;
+            return clientes[i].ID;
+        }
+    }
+    return -1;
+}
+
+void setAtendido(int id){
+     for (int i=0; i<numClientes; i++){
+        if ( clientes[i].ID==id){
+            clientes[i].atendido=2;
+            break;
+        }
+    }
 }
 void *Reponedor(void *arg){
 
@@ -103,7 +169,7 @@ void *accionCliente(void *arg){ // LLeva el * por que recibe los hilos recien cr
     while(1){
         // Bloqueo el mutex
         pthread_mutex_lock(&mutex_listaClientes);
-        int posicion = getPosicion(id);
+        int posicion = getPosicion(ID);
         if (clientes[posicion].atendido==1){
             //Ya no estan atendiendo
             pthread_mutex_unlock(&mutex_listaClientes);
@@ -111,17 +177,17 @@ void *accionCliente(void *arg){ // LLeva el * por que recibe los hilos recien cr
             break;
         }
         pthread_mutex_unlock(&mutex_listaClientes);
-        writeLogMessage(intoChar(id), "No me estan atendiendo");
+        writeLogMessage(intoChar(ID), "No me estan atendiendo");
         // Duermo 10 secs 
         sleep(10);
         // Compruebo si me voy de la cola(10%)
         if(irse<10){
             //Bloquea mutex clientes
-            pthread_mutex_lock(&mutex_clientes);
+            pthread_mutex_lock(&mutex_listaClientes);
             //Eliminamos clientes
-            eliminarCliente(id);
+            eliminarCliente(ID);
             //Desbloqueo  M¡mutex
-            pthread_mutex_unlock(&mutex_clientes);
+            pthread_mutex_unlock(&mutex_listaClientes);
             //Escribo mensaje
             //Nos morimos
             pthread_exit(NULL);
@@ -131,11 +197,11 @@ void *accionCliente(void *arg){ // LLeva el * por que recibe los hilos recien cr
     // Mensaje me estoy atendiendo.
     while(2){   // Espero mientras me atienden
         // Bloqueo el mutex.
-        pthread_mutex_lock(&mutex_clientes);
-        int posicion = getPosicion(id);
+        pthread_mutex_lock(&mutex_listaClientes);
+        int posicion = getPosicion(ID);
         // Si me han atendido -> salgo.
         if (clientes[posicion].atendido==0){
-            eliminarCliente(id);
+            eliminarCliente(ID);
             pthread_mutex_unlock(&mutex_listaClientes);
             break;
         }
