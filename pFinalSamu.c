@@ -15,6 +15,7 @@ FILE *archivo;
 int maxClientesCola;
 int numSolicitudes = 0;
 char logFileName[20];
+pthread_cond_t avisaReponedor;
 
 //Mutex globales
 pthread_mutex_t mutexReponedor;
@@ -40,6 +41,8 @@ struct cliente{
 struct cliente *clientes;
 
 int main(int argc, char* argv[]) {
+
+    srand(time(NULL));
     int numCajeros;
     if(argc == 1) {
         maxClientesCola = 20;
@@ -73,6 +76,10 @@ int main(int argc, char* argv[]) {
     pthread_mutex_init(&mutexLog, NULL);
     pthread_mutex_init(&mutexReponedor, NULL);
     pthread_mutex_init(&mutexListaClientes, NULL);
+
+    //Inicializamos la variable condicion
+    pthread_cond_init(&avisaReponedor,NULL);
+
     //Armamos las señales
     struct sigaction cliente_signal = {0};
     //Definimos la manejadora de la señal
@@ -95,7 +102,26 @@ int main(int argc, char* argv[]) {
 //Creamos los métodos hilos
 
 void *handlerReponedor(void *arg) {
+    while(1) {
+        //Esperamos por la señal
+        //Bloqueamos el mutex
+        pthread_mutex_lock(&mutexReponedor);
+        //Esperamos con wait
+        pthread_cond_wait(&avisaReponedor, &mutexReponedor);
+        //Mensaje: Voy a mirar un precio
+        writeLogMessage("Reponedor", "Voy a revisar un precio.");
+        //Calculo el tiempo atencion
+        int atencion = calculaAleatorios(1,5);
+        //Duermo el tiempo de atencion
+        char* mensaje = (char*)malloc(50*sizeof(char));
+        sprintf(mensaje, "Me va a llevar comprobarlo un total de %d segundos.", atencion);
+        writeLogMessage("Reponedor", mensaje);
+        sleep(atencion);
+        //Liberamos el mutex
+        pthread_mutex_unlock(&mutexReponedor);
+        writeLogMessage("Reponedor", "He terminado.");
 
+    }
 }
 
 void *handlerCajero(void *arg) {
@@ -122,6 +148,7 @@ void *handlerCajero(void *arg) {
                 reponedor vaya a comprobarlo, si está ocupado cliente y cajero deberán esperar
                 */
                 writeLogMessage(generaID(id, "Cajero"), "Vamos a avisar al reponedor.");
+                pthread_cond_signal(&avisaReponedor);
             }else if(aleatorio <= 70) {
                 //De los clientes atendidos el 70 % no tiene problemas
                 writeLogMessage(generaID(id, "Cliente"), "El cliente tiene todo correcto.");
