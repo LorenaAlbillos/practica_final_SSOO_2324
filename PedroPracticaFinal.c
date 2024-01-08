@@ -14,6 +14,7 @@
 pthread_mutex_t mutex_clientes;
 pthread_mutex_t mutex_log;
 pthread_mutex_t mutex_reponedor;
+pthread_cond_t avisaReponedor;
 FILE *archivo;
 int numClientes;
 int numSolicitudes;
@@ -45,10 +46,55 @@ int calculaAleatorios(int min, int max) {
     return rand() % (max-min+1) + min;
 }
 void *caja(void *arg){
+    int id = *(int*)&arg;
+    int atendido = 0;
+    while(1){
+        pthread_mutex_lock(&mutex_clientes);
+        int idCliente = getNuevoCliente();
+        pthread_mutex_unlock(&mutex_clientes);
+        if(idCliente != -1){
+            int atencion = calculaAleatorios(1,5);
+            char* mensaje =(char*)malloc(50*sizeof(char));
+            sprintf(mensaje, "El cliente %d comienza a ser atendido", id);
+            writeLogMessage(generaId(id, "Cajero"), mensaje);
+            sleep(atencion);
+            int posibilidades = calculaAleatorios(1, 100);
+            if(posibilidades <= 70){
+                sprintf(mensaje, "El %d cliente tiene todo correcto", id);
+                writeLogMessage(generaId(id, "cliente"),mensaje);
+                int precioCompra = calculaAleatorios(1,100);
+            }else if(posibilidades <= 95){
+                sprintf(mensaje, "El %d cliente tiene que esperar", id);
+                writeLogMessage(generaId(id, "cliente"), mensaje);
+                pthread_cond_signal(&avisaReponedor);       
+                int precio = calculaAleatorios(1,100);
 
+            }else{
+                sprintf(mensaje, "El %d cliente no puede realizar la compra",id);
+                writeLogMessage(generaId(id, "cliente"), mensaje);
+
+            }
+            pthread_mutex_lock(&mutex_clientes);
+            setAtendido(idCliente);
+            pthread_mutex_unlock(&mutex_clientes);
+            atendido++;
+            if(atendido % 10 == 0){
+                sprintf(mensaje, " %d me voy a descansar", id);
+                writeLogMessage(generaId(id, "cliente"),mensaje);
+
+                sleep(20);
+            }
+        }
+    }
 }
 void *reponedor(void *arg){
-
+    while(1){
+        pthread_mutex_lock(&mutex_clientes);
+        pthread_cond_wait(&avisaReponedor, &mutex_reponedor);
+        int atencion = calculaAleatorios(1,5);
+        sleep(atencion);
+        pthread_mutex_unlock(&mutex_clientes); 
+    }
 }
 void *AccionesCliente(void *arg){
 int id=*(int*)arg;
@@ -103,6 +149,23 @@ int getPosicion(int id){
     return -1;
 
 }
+void setAtendido(int id){
+    for(int i = 0; i < numClientes; i++){
+        if(clientes[i].ID == id){
+            clientes[i].atendido = 2;
+            break;
+        }
+    }
+}
+int getNuevoCliente(){
+    for(int i = 0; i < numClientes; i++){
+        if(clientes[i].atendido == 0 && clientes[i].ID !=0){
+            clientes[i].atendido = 1;
+            return clientes[i].ID;
+        }
+    }
+    return 1;
+}
 void eliminar(int id){
     int posicion = getPosicion(id);
     for(int i = posicion; i < numClientes;i++ ){
@@ -146,6 +209,8 @@ int main(int argc, char *argv[]){
     perror("Error");
     exit(-1);
    }
+   srand(time(NULL));
+    pthread_cond_init(&avisaReponedor, NULL);
     printf("PID %d\n", getpid());
     clientes = (struct cliente*) malloc (numClientes*sizeof(struct cliente));
     pthread_t repo;
@@ -164,10 +229,6 @@ int main(int argc, char *argv[]){
     struct sigaction cliente_signal = {0};
     cliente_signal.sa_handler = creaCliente;
     sigaction(SIGUSR1, &cliente_signal, NULL);
-    
-    
-    
-
     while(1){
         pause();
     }
