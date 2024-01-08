@@ -28,6 +28,8 @@ void *handlerCajero(void *arg);
 void *handlerReponedor(void *arg);
 void *metodoCliente(void *arg);
 char* generaID(int ID, char* tipo);
+int getNuevoCliente();
+void setAtendido(int id);
 
 
 struct cliente{
@@ -97,7 +99,38 @@ void *handlerReponedor(void *arg) {
 }
 
 void *handlerCajero(void *arg) {
-
+    //Obtenemos nuestro ID
+    int id = *(int*)arg;
+    int atendidos = 0;
+    while(1) {
+        //Bloqueamos el mutex de clientes
+        pthread_mutex_lock(&mutexListaClientes);
+        getNuevoCliente();
+        //Desbloqueamos el mutex
+        pthread_mutex_unlock(&mutexListaClientes);
+        if(id != -1) {
+            //Vamos a calcular el tiempo de ejecucion
+            int ejecucion = calculaAleatorios(1,5);
+            sleep(ejecucion);
+            //Escribimos en el log que comenzamos la atencion de un cliente
+            writeLogMessage(generaID(id, "Cliente"), "Comienza la atencion del cliente");
+            //Comprobamos las posibilidades
+            int aleatorio = calculaAleatorios(1,100);
+            if(aleatorio > 70 < 95) {
+                /*
+                El 25 % tiene algún problema con el precio de alguno de los productos que ha comprado y es necesario que el
+                reponedor vaya a comprobarlo, si está ocupado cliente y cajero deberán esperar
+                */
+                writeLogMessage(generaID(id, "Cajero"), "Vamos a avisar al reponedor.");
+            }else if(aleatorio <= 70) {
+                //De los clientes atendidos el 70 % no tiene problemas
+                writeLogMessage(generaID(id, "Cliente"), "El cliente tiene todo correcto.");
+            }else {
+               //El último 5% no puede realizar la compra por algún motivo (no tiene dinero, no funciona su tarjeta, etc.)
+                writeLogMessage(generaID(id, "Cliente"), "El cliente ha tenido algún problema y no ha podido realizar la compra.");
+            }
+        }
+    }
 }
 
 void *metodoCliente(void *arg) {
@@ -219,4 +252,29 @@ char* generaID(int ID, char* tipo) {
     char* ident = (char)malloc(20*sizeof(char));
     sprintf(ident,"%s_%d" ,tipo,ID);
     return ident;
+}
+
+//Metodo que busque el primer cliente sin atender, le ponga atendido a 1 y me devuelva su id
+
+int getNuevoCliente() {
+    int id = -1;
+    for(int i = 0; i < maxClientesCola; i++) {
+        if(clientes[i].atendido == 0 && clientes[i].ID != 0) {
+            id = clientes[i].ID;
+            clientes[i].atendido = 1;
+            break;
+        }
+    }
+    return id;
+}
+
+//Metodo que reciba el id y cambie atendido a 2
+
+void setAtendido(int id) {
+    for(int i = 0; i < maxClientesCola; i++) {
+        if(clientes[i].ID == id) {
+            clientes[i].atendido = 2;
+            break;
+        }
+    }
 }
