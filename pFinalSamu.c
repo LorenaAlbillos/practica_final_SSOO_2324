@@ -22,8 +22,9 @@ pthread_mutex_t mutexReponedor;
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexListaClientes;
 
-void writeLogMessage(int *id, char*msg);
-int calculaAleatorios();
+void writeLogMessage(char *id, char*msg);
+int calculaAleatorios(int min, int max);
+void creaCliente(int signal);
 int getPosicionLista(int ID);
 void *handlerCajero(void *arg);
 void *handlerReponedor(void *arg);
@@ -31,7 +32,7 @@ void *metodoCliente(void *arg);
 char* generaID(int ID, char* tipo);
 int getNuevoCliente();
 void setAtendido(int id);
-
+void eliminar(int ID);
 
 struct cliente{
     int ID;
@@ -60,37 +61,40 @@ int main(int argc, char* argv[]) {
         perror("Error: Estos valores no pueden ser negativos.");
         exit(-1);
     }
+    writeLogMessage("*****************Main********************", "Inicio de programa.");
+    printf("Para crear clientes ejecuta kill -10 %d\n", getpid());
     //Inicializamos nuestra cola de clientes
     clientes = (struct cliente*) malloc(maxClientesCola*sizeof(struct cliente));
-    //Inicializar hilos
-    pthread_t reponedor;
-    pthread_create(&reponedor, NULL, handlerReponedor, NULL);
-    for(int i = 0; i < maxClientesCola; i++) {
-        pthread_t cliente;
-    }
-    for(int i = 0; i < numCajeros; i++) {
-        pthread_t cajero;
-        pthread_create(&cajero, NULL, handlerCajero, NULL);
-    }
-    //Inicializamos los mutex, los 3 de la misma manera
+     //Inicializamos los mutex, los 3 de la misma manera
     pthread_mutex_init(&mutexLog, NULL);
     pthread_mutex_init(&mutexReponedor, NULL);
     pthread_mutex_init(&mutexListaClientes, NULL);
-
-    //Inicializamos la variable condicion
-    pthread_cond_init(&avisaReponedor,NULL);
-
-    //Armamos las señales
-    struct sigaction cliente_signal = {0};
-    //Definimos la manejadora de la señal
-    cliente_signal.sa_handler = metodoCliente;
-    //Armamos la señal 
-    sigaction(SIGUSR1, &cliente_signal, NULL);
-    //Inicializamos la cola (Antes pthread_create)
+        //Inicializamos la cola (Antes pthread_create)
     for(int i = 0; i < maxClientesCola; i++) {
         clientes[i].ID = 0;
         clientes[i].atendido = 0;
     }
+    //Inicializar hilos
+
+    pthread_t reponedor;
+    pthread_create(&reponedor, NULL, handlerReponedor, NULL);
+ 
+    for(int i = 0; i < numCajeros; i++) {
+        pthread_t cajero;
+        int *id=(int*)malloc(sizeof(int));
+        *id=i;
+        pthread_create(&cajero, NULL, handlerCajero, (void*)id);
+    }
+
+    //Inicializamos la variable condicion
+    pthread_cond_init(&avisaReponedor,NULL);
+    //Armamos las señales
+    struct sigaction cliente_signal = {0};
+    //Definimos la manejadora de la señal
+    cliente_signal.sa_handler = creaCliente;
+    //Armamos la señal 
+    sigaction(SIGUSR1, &cliente_signal, NULL);
+
     //Esperar señal
     while(1) {
         pause();
@@ -127,34 +131,61 @@ void *handlerReponedor(void *arg) {
 void *handlerCajero(void *arg) {
     //Obtenemos nuestro ID
     int id = *(int*)arg;
+    id++;
+    writeLogMessage(generaID(id, "Cajero"), "Vamos a atender");
     int atendidos = 0;
     while(1) {
         //Bloqueamos el mutex de clientes
         pthread_mutex_lock(&mutexListaClientes);
-        getNuevoCliente();
+        int idC=  getNuevoCliente();
         //Desbloqueamos el mutex
         pthread_mutex_unlock(&mutexListaClientes);
-        if(id != -1) {
+        if(idC != -1) {
             //Vamos a calcular el tiempo de ejecucion
             int ejecucion = calculaAleatorios(1,5);
             sleep(ejecucion);
             //Escribimos en el log que comenzamos la atencion de un cliente
-            writeLogMessage(generaID(id, "Cliente"), "Comienza la atencion del cliente");
+            char* mensajee = (char*)malloc(50*sizeof(char));
+            sprintf(mensajee, "Comienza la atencion del cliente %d", idC);
+            writeLogMessage(generaID(id, "Cajero"), mensajee);
             //Comprobamos las posibilidades
             int aleatorio = calculaAleatorios(1,100);
-            if(aleatorio > 70 < 95) {
+            if(aleatorio > 70 && aleatorio<=95) {
                 /*
                 El 25 % tiene algún problema con el precio de alguno de los productos que ha comprado y es necesario que el
                 reponedor vaya a comprobarlo, si está ocupado cliente y cajero deberán esperar
                 */
                 writeLogMessage(generaID(id, "Cajero"), "Vamos a avisar al reponedor.");
                 pthread_cond_signal(&avisaReponedor);
+                //Calculo el precio de la compra
+                int precio = calculaAleatorios(1,100);
+                char* mensaje = (char*)malloc(50*sizeof(char));
+                sprintf(mensaje, "El precio del cliente_%d la compra es %d euros.",idC, precio);
+                writeLogMessage(generaID(id, "Cajero"), mensaje);
             }else if(aleatorio <= 70) {
                 //De los clientes atendidos el 70 % no tiene problemas
-                writeLogMessage(generaID(id, "Cliente"), "El cliente tiene todo correcto.");
+
+                writeLogMessage(generaID(id, "Cajero"), "El cliente tiene todo correcto.");
+                  int precio = calculaAleatorios(1,100);
+                char* mensaje = (char*)malloc(50*sizeof(char));
+                sprintf(mensaje, "El precio del cliente_%d la compra es %d euros.",idC, precio);
+                writeLogMessage(generaID(id, "Cajero"), mensaje);
+
             }else {
                //El último 5% no puede realizar la compra por algún motivo (no tiene dinero, no funciona su tarjeta, etc.)
-                writeLogMessage(generaID(id, "Cliente"), "El cliente ha tenido algún problema y no ha podido realizar la compra.");
+                writeLogMessage(generaID(id, "Cajero"), "El cliente ha tenido algún problema y no ha podido realizar la compra.");
+
+            }
+            //Escribo en el log ha finalizado la atencion del cliente
+            //Cambiamos el estado
+            pthread_mutex_lock(&mutexListaClientes);
+            setAtendido(idC);
+            pthread_mutex_unlock(&mutexListaClientes);
+            atendidos++; //Add un cliente mas atendido
+            //Comprobamos descanso
+            if(atendidos % 10 == 0) {
+                writeLogMessage(generaID(id, "Cajero"), "Voy a tomarme un descanso.");
+                sleep(20);
             }
         }
     }
@@ -165,11 +196,16 @@ void *metodoCliente(void *arg) {
     int id = *(int*)arg;
     //Ponemos un mensaje de nuevo cliente creado
     printf("Cliente ID: %d | He sido creado.", id);
+    writeLogMessage(generaID(id,"Cliente"), "He sido creado.");
+
     while(1) {
+
+        //Dormimos 10 segundos
+        sleep(10);
         //Obtenemos la posicion de mi solicitud en la lista y comprobar si estoy siendo atendido(atendido == 1)
         pthread_mutex_lock(&mutexListaClientes);
         int posicion = getPosicionLista(id);
-        if(clientes[posicion].atendido == 1) { //Esto significa que nos están atendiendo
+        if(clientes[posicion].atendido != 0) { //Esto significa que nos están atendiendo
             pthread_mutex_unlock(&mutexListaClientes);
             //Ponemos un mensaje en el log de que nos están atendiendo
             writeLogMessage(generaID(id,"Cliente"), "Me están atendiendo.");
@@ -179,8 +215,7 @@ void *metodoCliente(void *arg) {
         else {
             //Liberamos el mutex
             pthread_mutex_unlock(&mutexListaClientes);
-            //Dormimos 10 segundos
-            sleep(10);
+           
             //Comprobamos si nos tenemos que ir (10%)
             int num = calculaAleatorios(10,100);
                 if(num <= 10) {
@@ -226,7 +261,7 @@ void creaCliente(int signal) {
             numSolicitudes++;
             printf("Nuevo cliente");
             pthread_t cliente;
-            pthread_create(&cliente,NULL,metodoCliente,(void*)clientes[i].ID);
+            pthread_create(&cliente,NULL,metodoCliente,(void*)&clientes[i].ID);
             pthread_mutex_unlock(&mutexListaClientes);
             return;
         }
@@ -235,7 +270,7 @@ void creaCliente(int signal) {
     printf("No hay espacio.");
 }
 
-void writeLogMessage(int *id, char*msg) {
+void writeLogMessage(char *id, char*msg) {
     //Bloquear mutex
     pthread_mutex_lock(&mutexLog);
     //Calculamos la hora actual
@@ -245,7 +280,7 @@ void writeLogMessage(int *id, char*msg) {
     strftime(stnow, 25, "%d/%m/%y %H: %M: %S", tlocal);
 
     //Escribimos en el log
-    archivo = fopen(logFileName, "a");
+    archivo = fopen("app.log", "a");
     fprintf(archivo, "[%s] %s: %s\n", stnow, id, msg);
     fclose(archivo);
     //Liberar 
@@ -276,7 +311,7 @@ void eliminar(int ID) {
 }
 
 char* generaID(int ID, char* tipo) {
-    char* ident = (char)malloc(20*sizeof(char));
+    char* ident = (char*)malloc(20*sizeof(char));
     sprintf(ident,"%s_%d" ,tipo,ID);
     return ident;
 }
