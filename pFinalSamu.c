@@ -145,9 +145,6 @@ void *handlerCajero(void *arg) {
             int ejecucion = calculaAleatorios(1,5);
             sleep(ejecucion);
             //Escribimos en el log que comenzamos la atencion de un cliente
-            char* mensajee = (char*)malloc(50*sizeof(char));
-            sprintf(mensajee, "Comienza la atencion del cliente %d", idC);
-            writeLogMessage(generaID(id, "Cajero"), mensajee);
             //Comprobamos las posibilidades
             int aleatorio = calculaAleatorios(1,100);
             if(aleatorio > 70 && aleatorio<=95) {
@@ -164,16 +161,19 @@ void *handlerCajero(void *arg) {
                 writeLogMessage(generaID(id, "Cajero"), mensaje);
             }else if(aleatorio <= 70) {
                 //De los clientes atendidos el 70 % no tiene problemas
-
-                writeLogMessage(generaID(id, "Cajero"), "El cliente tiene todo correcto.");
-                  int precio = calculaAleatorios(1,100);
+                char* mensajeCorreco = (char*)malloc(50*sizeof(char));
+                sprintf(mensajeCorreco, "El Cliente %d , tiene todo correcto.", idC);
+                writeLogMessage(generaID(id, "Cajero"), mensajeCorreco);
+                int precio = calculaAleatorios(1,100);
                 char* mensaje = (char*)malloc(50*sizeof(char));
-                sprintf(mensaje, "El precio del cliente_%d la compra es %d euros.",idC, precio);
+                sprintf(mensaje, "El precio del Cliente_%d la compra es %d euros.",idC, precio);
                 writeLogMessage(generaID(id, "Cajero"), mensaje);
 
             }else {
                //El último 5% no puede realizar la compra por algún motivo (no tiene dinero, no funciona su tarjeta, etc.)
-                writeLogMessage(generaID(id, "Cajero"), "El cliente ha tenido algún problema y no ha podido realizar la compra.");
+                char* mensajeError = (char*)malloc(50*sizeof(char));
+                sprintf(mensajeError, "El Cliente %d ha tenido algún problema y no ha podido realizar la compra.",idC);
+                writeLogMessage(generaID(id, "Cajero"), mensajeError);
 
             }
             //Escribo en el log ha finalizado la atencion del cliente
@@ -244,7 +244,7 @@ void *metodoCliente(void *arg) {
         }
     }
     //Pongo un mensaje de que me han atendido
-    writeLogMessage(generaID(id, "Cliente"), " Ya he sido atendido.");
+    writeLogMessage(generaID(id, "Cliente"), "Ya he sido atendido.");
     //Me borro de la lista,el cliente abandona el establecimiento
     pthread_mutex_lock(&mutexListaClientes);
     eliminar(id);
@@ -259,7 +259,7 @@ void creaCliente(int signal) {
         if(clientes[i].ID == 0) {
             clientes[i].ID = numSolicitudes; //Le ponemos el siguiente al ultimo id asignado, secuencial.
             numSolicitudes++;
-            printf("Nuevo cliente");
+            printf("Nuevo cliente.\n");
             pthread_t cliente;
             pthread_create(&cliente,NULL,metodoCliente,(void*)&clientes[i].ID);
             pthread_mutex_unlock(&mutexListaClientes);
@@ -267,7 +267,9 @@ void creaCliente(int signal) {
         }
     }
     pthread_mutex_unlock(&mutexListaClientes);
-    printf("No hay espacio.");
+    printf("No hay espacio.\n");
+    writeLogMessage("Main", "No hay espacio.");
+    
 }
 
 void writeLogMessage(char *id, char*msg) {
