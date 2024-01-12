@@ -1,51 +1,28 @@
-[12/01/24 20: 13: 51] *****************Main********************: Inicio de programa.
-[12/01/24 20: 13: 51] Cajero_4: Vamos a atender
-[12/01/24 20: 13: 51] Cajero_1: Vamos a atender
-[12/01/24 20: 13: 51] Cajero_2: Vamos a atender
-[12/01/24 20: 13: 51] Cajero_3: Vamos a atender
-[12/01/24 20: 13: 51] Cajero_5: Vamos a atender
-[12/01/24 20: 14: 01] Cliente_0: He sido creado.
-[12/01/24 20: 14: 02] Cliente_1: He sido creado.
-[12/01/24 20: 14: 02] Cliente_2: He sido creado.
-[12/01/24 20: 14: 03] Cliente_3: He sido creado.
-[12/01/24 20: 14: 03] Cliente_4: He sido creado.
-[12/01/24 20: 14: 03] Cliente_5: He sido creado.
-[12/01/24 20: 14: 03] Cliente_6: He sido creado.
-[12/01/24 20: 14: 04] Cliente_7: He sido creado.
-[12/01/24 20: 14: 04] Cliente_8: He sido creado.
-[12/01/24 20: 14: 05] Cajero_3: El Cliente 3 , tiene todo correcto.
-[12/01/24 20: 14: 05] Cajero_3: El precio del Cliente_3 la compra es 59 euros.
-[12/01/24 20: 14: 05] Cliente_9: He sido creado.
-[12/01/24 20: 14: 05] Cajero_4: El Cliente 1 , tiene todo correcto.
-[12/01/24 20: 14: 05] Cajero_4: El precio del Cliente_1 la compra es 10 euros.
-[12/01/24 20: 14: 05] Cajero_2: El Cliente 4 , tiene todo correcto.
-[12/01/24 20: 14: 05] Cajero_2: El precio del Cliente_4 la compra es 92 euros.
-[12/01/24 20: 14: 05] Cliente_10: He sido creado.
-[12/01/24 20: 14: 05] Cliente: No hay espacio.
-
-[12/01/24 20: 14: 06] Cliente: No hay espacio.
-
-[12/01/24 20: 14: 06] Cajero_4: El Cliente 7 , tiene todo correcto.
-[12/01/24 20: 14: 06] Cajero_4: El precio del Cliente_7 la compra es 12 euros.
-[12/01/24 20: 14: 06] Cliente: No hay espacio.
-
-[12/01/24 20: 14: 06] Cliente: No hay espacio.
-
-[12/01/24 20: 14: 07] Cliente: No hay espacio.
-
-[12/01/24 20: 14: 07] Cajero_1: El Cliente 5 , tiene todo correcto.
-[12/01/24 20: 14: 07] Cajero_1: El precio del Cliente_5 la compra es 82 euros.
-[12/01/24 20: 14: 07] Cajero_5: El Cliente 2 , tiene todo correcto.
-[12/01/24 20: 14: 07] Cajero_5: El precio del Cliente_2 la compra es 19 euros.
-[12/01/24 20: 14: 08] Cajero_2: El Cliente 8 , tiene todo correcto.
-[12/01/24 20: 14: 08] Cajero_2: El precio del Cliente_8 la compra es 91 euros.
-[12/01/24 20: 14: 09] Cajero_3: El Cliente 6 , tiene todo correcto.
-[12/01/24 20: 14: 09] Cajero_3: El precio del Cliente_6 la compra es 35 euros.
-[12/01/24 20: 14: 10] Cajero_1: El Cliente 10 , tiene todo correcto.
-[12/01/24 20: 14: 10] Cajero_1: El precio del Cliente_10 la compra es 23 euros.
-[12/01/24 20: 14: 11] Cajero_4: El Cliente 9 , tiene todo correcto.
-[12/01/24 20: 14: 11] Cajero_4: El precio del Cliente_9 la compra es 9 euros.
-[12/01/24 20: 14: 12] Cliente_1: Me están atendiendo.
-[12/01/24 20: 14: 12] Cliente_1: Ya he sido atendido.
-[12/01/24 20: 14: 12] Cliente_2: Me están atendiendo.
-[12/01/24 20: 14: 12] Cliente_2: Ya he sido atendido.
+[12/01/24 22: 21: 01] *****************Main********************: Inicio de programa.
+[12/01/24 22: 21: 01] Cajero_1: Vamos a atender
+[12/01/24 22: 21: 01] Cajero_2: Vamos a atender
+[12/01/24 22: 21: 08] Cliente_1: He sido creado.
+[12/01/24 22: 21: 09] Cajero_1: El Cliente 1 , tiene todo correcto.
+[12/01/24 22: 21: 09] Cajero_1: El precio del Cliente_1 la compra es 33 euros.
+[12/01/24 22: 21: 10] Main: No hay espacio.
+[12/01/24 22: 21: 18] Cliente_1: Me están atendiendo.
+[12/01/24 22: 21: 18] Cliente_1: Ya he sido atendido.
+[12/01/24 22: 21: 26] Main: La lista de clientes ahora tiene un nuevo tamaño de 2 clientes.
+[12/01/24 22: 21: 29] Cliente_2: He sido creado.
+[12/01/24 22: 21: 29] Cliente_3: He sido creado.
+[12/01/24 22: 21: 30] Cajero_2: El Cliente 2 , tiene todo correcto.
+[12/01/24 22: 21: 30] Cajero_2: El precio del Cliente_2 la compra es 20 euros.
+[12/01/24 22: 21: 30] Main: No hay espacio.
+[12/01/24 22: 21: 33] Cajero_1: Vamos a avisar al reponedor.
+[12/01/24 22: 21: 33] Reponedor: Voy a revisar un precio.
+[12/01/24 22: 21: 33] Reponedor: Me va a llevar comprobarlo un total de 4 segundos.
+[12/01/24 22: 21: 33] Cajero_1: El precio del cliente_3 la compra es 36 euros.
+[12/01/24 22: 21: 37] Reponedor: He terminado.
+[12/01/24 22: 21: 39] Cliente_2: Me están atendiendo.
+[12/01/24 22: 21: 39] Cliente_2: Ya he sido atendido.
+[12/01/24 22: 21: 39] Cliente_3: Me están atendiendo.
+[12/01/24 22: 21: 39] Cliente_3: Ya he sido atendido.
+[12/01/24 22: 21: 43] Main: La lista de cajeros ahora tiene un nuevo tamaño de 5 cajeros.
+[12/01/24 22: 21: 43] Cajero_5: Vamos a atender
+[12/01/24 22: 21: 43] Cajero_4: Vamos a atender
+[12/01/24 22: 21: 43] Cajero_3: Vamos a atender

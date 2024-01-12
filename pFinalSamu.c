@@ -14,6 +14,7 @@ FILE *archivo;
 //Variables globales
 int maxClientesCola;
 int numSolicitudes = 0;
+int numCajeros;
 char logFileName[20];
 pthread_cond_t avisaReponedor;
 
@@ -33,6 +34,8 @@ char* generaID(int ID, char* tipo);
 int getNuevoCliente();
 void setAtendido(int id);
 void eliminar(int ID);
+void clientesDinamico(int signal);
+void cajerosDinamico(int signal);
 
 struct cliente{
     int ID;
@@ -44,7 +47,7 @@ struct cliente *clientes;
 int main(int argc, char* argv[]) {
 
     srand(time(NULL));
-    int numCajeros;
+   
     if(argc == 1) {
         maxClientesCola = 20;
         numCajeros = 3;
@@ -62,7 +65,10 @@ int main(int argc, char* argv[]) {
         exit(-1);
     }
     writeLogMessage("*****************Main********************", "Inicio de programa.");
-    printf("Para crear clientes ejecuta kill -10 %d\n", getpid());
+    printf("1. Para crear clientes ejecuta kill -10 %d\n", getpid());
+    printf("2. Para aumentar el número de clientes ejecuta kill -13 %d\n", getpid());
+    printf("3. Para aumentar el número de cajeros  ejecuta kill -12 %d\n", getpid());
+
     //Inicializamos nuestra cola de clientes
     clientes = (struct cliente*) malloc(maxClientesCola*sizeof(struct cliente));
      //Inicializamos los mutex, los 3 de la misma manera
@@ -90,10 +96,21 @@ int main(int argc, char* argv[]) {
     pthread_cond_init(&avisaReponedor,NULL);
     //Armamos las señales
     struct sigaction cliente_signal = {0};
+    
     //Definimos la manejadora de la señal
     cliente_signal.sa_handler = creaCliente;
+    
     //Armamos la señal 
     sigaction(SIGUSR1, &cliente_signal, NULL);
+
+    //Asignacion dinámica
+    struct sigaction masClientes = {0};
+    struct sigaction masCajeros = {0};
+    masClientes.sa_handler = clientesDinamico;
+    masCajeros.sa_handler = cajerosDinamico;
+    sigaction(SIGPIPE, &masClientes,NULL);
+    sigaction(SIGUSR2, &masCajeros,NULL);
+    
 
     //Esperar señal
     while(1) {
@@ -195,7 +212,7 @@ void *metodoCliente(void *arg) {
     //Convertirlo a nuestro tipo ID (int)
     int id = *(int*)arg;
     //Ponemos un mensaje de nuevo cliente creado
-    printf("Cliente ID: %d | He sido creado.", id);
+    printf("Cliente ID: %d | He sido creado.\n", id);
     writeLogMessage(generaID(id,"Cliente"), "He sido creado.");
 
     while(1) {
@@ -257,8 +274,8 @@ void creaCliente(int signal) {
     pthread_mutex_lock(&mutexListaClientes);
     for(int i = 0; i < maxClientesCola; i++) {
         if(clientes[i].ID == 0) {
-            clientes[i].ID = numSolicitudes; //Le ponemos el siguiente al ultimo id asignado, secuencial.
             numSolicitudes++;
+            clientes[i].ID = numSolicitudes; //Le ponemos el siguiente al ultimo id asignado, secuencial.
             printf("Nuevo cliente.\n");
             pthread_t cliente;
             pthread_create(&cliente,NULL,metodoCliente,(void*)&clientes[i].ID);
@@ -341,4 +358,40 @@ void setAtendido(int id) {
             break;
         }
     }
+}
+
+void clientesDinamico(int signal) {
+    int num = 0;
+    printf("Introduce el nuevo número máximo de clientes: \n");
+    scanf("%d" , &num);
+    pthread_mutex_lock(&mutexListaClientes);
+    int aux=num-maxClientesCola;
+    maxClientesCola = num;
+    clientes = (struct cliente*)realloc(clientes, maxClientesCola);
+    for(int i = aux; i < maxClientesCola; i++) {
+        clientes[i].ID=0;
+        clientes[i].atendido=0;
+    }
+    pthread_mutex_unlock(&mutexListaClientes);
+
+    char* msg = (char*)malloc(100*sizeof(char));
+    sprintf(msg, "La lista de clientes ahora tiene un nuevo tamaño de %d clientes.",num);
+    writeLogMessage("Main", msg);
+}
+
+void cajerosDinamico(int signal) {
+    int num = 0;
+    printf("Introduce el nuevo número de cajeros: \n");
+    scanf("%d" , &num);
+
+    for(int i = numCajeros; i < num; i++) {
+        pthread_t cajero;
+        int *id=(int*)malloc(sizeof(int));
+        *id=i;
+        pthread_create(&cajero, NULL, handlerCajero, (void*)id);
+    }
+    numCajeros = num;
+   char* msg = (char*)malloc(100*sizeof(char));
+    sprintf(msg, "La lista de cajeros ahora tiene un nuevo tamaño de %d cajeros.",num);
+    writeLogMessage("Main", msg);
 }
