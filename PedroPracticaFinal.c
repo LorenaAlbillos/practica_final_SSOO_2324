@@ -195,9 +195,34 @@ void creaCliente(int signal){
      pthread_mutex_unlock(&mutex_clientes);
 
 }
+void incrementaClientes(int signal){
+    printf("Introduce cuantos clientes quieres aumentar");
+    int num = 0 ;
+    scanf("%d", clientes);
+    numClientes += num;
+    clientes = (struct cliente*)realloc(clientes, numClientes);
+    pthread_mutex_unlock(&mutex_clientes);
+        writeLogMessage("Main", "La lista de clientes se ha aumentado");
+
+}
+void incrementaCajeros(int signal){
+    printf("Introduce cuantos cajeros quieres aumentar");
+    int num = 0 ;
+    scanf("%d", clientes);
+   for(int i = 0 ; i <num; i++){
+    pthread_t thread;
+    int* ident = (int*)malloc(sizeof(int));
+    *ident =i + numCajeros+1;
+    pthread_create(&thread, NULL, cajero, (void*)ident)
+   }
+   writeLogMessage("Main", "La lista de cajeros se ha aumentado");
+}
 
 
 int main(int argc, char *argv[]){
+    struct sigaction masclientes = {0};
+    masclientes.sa_handler = incrementaClientes();
+    sigaction(SIGUSR2,&masclientes,NULL)
    if(argc == 1){
     numClientes = 20;
     numCajeros = 3;
